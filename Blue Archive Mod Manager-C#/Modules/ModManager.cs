@@ -400,10 +400,16 @@ public async Task GeneratePreviewsAsync(ModData mod)
         var doc = System.Text.Json.JsonDocument.Parse(output);
         if (doc.RootElement.TryGetProperty("textures", out var arr))
         {
-            mod.PreviewPaths = arr.EnumerateArray()
+            var filePaths = arr.EnumerateArray()
                 .Select(t => t.GetProperty("path").GetString())
                 .Where(p => !string.IsNullOrEmpty(p))
                 .ToList();
+
+            mod.PreviewPaths = filePaths
+                .Select(ImageToDataUrl)
+                .Where(s => s != null)
+                .ToList()!;
+
             mod.PreviewStatus = mod.PreviewPaths.Count > 0 ? "ready" : "failed";
         }
         else
@@ -417,6 +423,20 @@ public async Task GeneratePreviewsAsync(ModData mod)
         _logger($"GeneratePreviewsAsync error: {ex.Message}");
     }
 }
+
+        private static string? ImageToDataUrl(string path)
+        {
+            try
+            {
+                var bytes = File.ReadAllBytes(path);
+                var b64 = Convert.ToBase64String(bytes);
+                return $"data:image/png;base64,{b64}";
+            }
+            catch
+            {
+                return null;
+            }
+        }
         private static bool ShouldUseJpMapping(string region)
         {
             return region.Equals("jp", StringComparison.OrdinalIgnoreCase);

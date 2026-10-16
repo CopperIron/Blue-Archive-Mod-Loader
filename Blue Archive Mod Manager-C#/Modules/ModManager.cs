@@ -227,127 +227,124 @@ namespace Blue_Archive_Mod_Manager_C_.Modules
             var settingKey = $"mods_{region.ToLower()}";
             _settingsManager.Set(settingKey, mods);
         }
+private string GetBackupDir()
+{
+    var dir = Path.Combine(_settingsManager.GetAppDataPath(), "Backups");
+    Directory.CreateDirectory(dir);
+    return dir;
+}
+        
+public async Task ApplyModsAsync(List<string> selectedModIds, GamePathManager gamePathManager, string region = "global")
+{
+    var jpMapping = ShouldUseJpMapping(region) ? LoadJpOriginalToHashMap() : null;
+    var backupDir = GetBackupDir();
 
-        public async Task ApplyModsAsync(List<string> selectedModIds, GamePathManager gamePathManager, string region = "global")
+    await Task.Run(async () =>
+    {
+        var mods = GetAllMods(null, region);
+        var (gamePath, bundlePath) = gamePathManager.GetGamePaths();
+        if (string.IsNullOrEmpty(bundlePath) || !Directory.Exists(bundlePath))
         {
-            var jpMapping = ShouldUseJpMapping(region) ? LoadJpOriginalToHashMap() : null;
-
-            await Task.Run(async () =>
-            {
-                // We need to load from the specific region list, OR assume the Ids are unique enough?
-                // Safest to load the list for the region.
-                var mods = GetAllMods(null, region); 
-                var (gamePath, bundlePath) = gamePathManager.GetGamePaths(); // GamePathManager needs to know region? NO, GamePathManager returns current configured path.
-                // Wait, if I switch region in UI, does GamePathManager switch paths?
-                // The current implementation of GamePathManager.GetGamePaths() just returns stored "gamePath" from settings.
-                // It does NOT separate Global vs JP paths in settings storage yet, it overrwrites "gamePath" key.
-                // This means when user switches server in UI, they *must* redetect path.
-                // Which is handled by `findGamePathAuto(false)` in renderer.js listener.
-                // So at this point, `gamePathManager` should assume the correct path is set.
-                
-                if (string.IsNullOrEmpty(bundlePath) || !Directory.Exists(bundlePath))
-                {
-                    _logger("Bundle path not configured or missing.");
-                    return;
-                }
-
-                var selected = mods.Where(m => selectedModIds.Contains(m.Id)).ToList();
-                foreach (var mod in selected)
-                {
-                    var modPath = mod.Path;
-                    if (!File.Exists(modPath))
-                    {
-                        _logger($"Mod file missing: {modPath}");
-                        continue;
-                    }
-
-                    var targetFileName = !string.IsNullOrEmpty(mod.FileName) ? mod.FileName : Path.GetFileName(mod.Path);
-                    targetFileName = ResolveTargetFileName(targetFileName, region, jpMapping);
-                    var targetPath = gamePathManager.FindTargetFile(targetFileName);
-                    if (string.IsNullOrEmpty(targetPath))
-                    {
-                        _logger($"Target file not found for mod: {targetFileName}");
-                        continue;
-                    }
-
-                    var backupPath = targetPath + ".bak";
-                    try
-                    {
-                        if (!File.Exists(backupPath))
-                        {
-                            File.Copy(targetPath, backupPath, true);
-                            _logger($"Backup created: {backupPath}");
-                        }
-
-                        var success = await Utils.CrcPatcher.ManipulateCrcAsync(backupPath, modPath, targetPath, _logger);
-                        if (success)
-                        {
-                            mod.Enabled = true;
-                            _logger($"Applied mod: {mod.FileName}");
-                        }
-                        else
-                        {
-                            _logger($"Failed to apply CRC patch for: {mod.FileName}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger($"Error applying mod {mod.FileName}: {ex.Message}");
-                    }
-                }
-
-                SaveMods(mods, region);
-            });
+            _logger("Bundle path not configured or missing.");
+            return;
         }
 
-        public async Task<List<string>> UninstallModsAsync(List<string> selectedModIds, GamePathManager gamePathManager, string region = "global")
+        var selected = mods.Where(m => selectedModIds.Contains(m.Id)).ToList();
+        foreach (var mod in selected)
         {
-            var jpMapping = ShouldUseJpMapping(region) ? LoadJpOriginalToHashMap() : null;
-            return await Task.Run(() =>
+            if (!File.Exists(mod.Path)) { _logger($"Mod file missing: {mod.Path}"); continue; }
+
+            var targetFileName = !string.IsNullOrEmpty(mod.FileName) ? mod.FileName : Path.GetFileName(mod.Path);
+            targetFileName = ResolveTargetFileName(targetFileName, region, jpMapping);
+            var targetPath = gamePathManager.FindTargetFile(targetFileName);
+            if (string.IsNullOrEmpty(targetPath))
             {
-                var errors = new List<string>();
-                var (gamePath, bundlePath) = gamePathManager.GetGamePaths();
-                var mods = GetAllMods(null, region);
-                var selected = mods.Where(m => selectedModIds.Contains(m.Id)).ToList();
+                _logger($"Target file not found for mod: {targetFileName}");
+                continue;
+            }
 
-                foreach (var mod in selected)
+            // Store exact paths
+            mod.TargetPath = targetPath;
+
+            var backupName = $"{mod.Id}_{Path.GetFileName(targetPath)}.bak";
+            var backupPath = Path.Combine(backupDir, backupName);
+            mod.BackupPath = backupPath;
+
+            try
+            {
+                if (!File.Exists(backupPath))
                 {
-                    var targetFileName = !string.IsNullOrEmpty(mod.FileName) ? mod.FileName : Path.GetFileName(mod.Path);
-                    targetFileName = ResolveTargetFileName(targetFileName, region, jpMapping);
-                    var targetPath = gamePathManager.FindTargetFile(targetFileName);
-                    if (string.IsNullOrEmpty(targetPath))
-                    {
-                        var msg = $"Target file not found for uninstall: {targetFileName}";
-                        _logger(msg);
-                        errors.Add(msg);
-                        // If target not found, we can't restore. But should we disable?
-                        // If file is gone, mod is effectively gone from game.
-                        mod.Enabled = false; 
-                        continue;
-                    }
-
-                    var backupPath = targetPath + ".bak";
-                    try
-                    {
-                        if (File.Exists(backupPath))
-                        {
-                            File.Copy(backupPath, targetPath, true);
-                            _logger($"Restored backup for: {targetFileName}");
-                        }
-                        mod.Enabled = false;
-                    }
-                    catch (Exception ex)
-                    {
-                        var msg = $"Error restoring {targetFileName}: {ex.Message}";
-                        _logger(msg);
-                        errors.Add(msg);
-                    }
+                    File.Copy(targetPath, backupPath, true);
+                    _logger($"Backup created: {backupPath}");
                 }
 
-                SaveMods(mods, region);
-                return errors;
-            });
+                var success = await Utils.CrcPatcher.ManipulateCrcAsync(backupPath, mod.Path, targetPath, _logger);
+                if (success)
+                {
+                    mod.Enabled = true;
+                    _logger($"Applied mod: {mod.FileName}");
+                }
+                else
+                {
+                    _logger($"Failed to apply CRC patch for: {mod.FileName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger($"Error applying mod {mod.FileName}: {ex.Message}");
+            }
         }
+
+        SaveMods(mods, region);
+    });
+}
+
+public async Task<List<string>> UninstallModsAsync(List<string> selectedModIds, GamePathManager gamePathManager, string region = "global")
+{
+    return await Task.Run(() =>
+    {
+        var errors = new List<string>();
+        var mods = GetAllMods(null, region);
+        var selected = mods.Where(m => selectedModIds.Contains(m.Id)).ToList();
+
+        foreach (var mod in selected)
+        {
+            if (string.IsNullOrEmpty(mod.TargetPath) || string.IsNullOrEmpty(mod.BackupPath))
+            {
+                var msg = $"No stored target/backup for {mod.FileName}. Cannot restore reliably.";
+                _logger(msg);
+                errors.Add(msg);
+                mod.Enabled = false;
+                continue;
+            }
+
+            try
+            {
+                if (File.Exists(mod.BackupPath) && File.Exists(mod.TargetPath))
+                {
+                    File.Copy(mod.BackupPath, mod.TargetPath, true);
+                    _logger($"Restored original for: {mod.FileName} -> {mod.TargetPath}");
+                }
+                else
+                {
+                    var msg = $"Backup or target missing for {mod.FileName}";
+                    _logger(msg);
+                    errors.Add(msg);
+                }
+                mod.Enabled = false;
+            }
+            catch (Exception ex)
+            {
+                var msg = $"Error restoring {mod.FileName}: {ex.Message}";
+                _logger(msg);
+                errors.Add(msg);
+            }
+        }
+
+        SaveMods(mods, region);
+        return errors;
+    });
+}
 
         private static bool ShouldUseJpMapping(string region)
         {

@@ -517,7 +517,7 @@ async function showPreview(modId) {
 
         paths.forEach(p => {
             const img = document.createElement('img');
-            img.src = 'file:///' + p.replace(/\\/g, '/');
+            img.src = p;
             img.alt = 'preview';
             container.appendChild(img);
         });

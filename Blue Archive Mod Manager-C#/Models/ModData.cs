@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Blue_Archive_Mod_Manager_C_.Models
@@ -16,6 +16,12 @@ namespace Blue_Archive_Mod_Manager_C_.Models
         public string CharacterId { get; set; }
         public string CharacterDev { get; set; }
         public string LastLanguage { get; set; }
+
+        // New fields for reliable restore + previews
+        public string TargetPath { get; set; }          // Absolute path in the game folder that was replaced
+        public string BackupPath { get; set; }          // Absolute path of the original file backup
+        public List<string> PreviewPaths { get; set; } = new();  // Extracted texture previews
+        public string PreviewStatus { get; set; }       // "none" | "extracting" | "ready" | "failed"
     }
 
     public class GamePathConfig

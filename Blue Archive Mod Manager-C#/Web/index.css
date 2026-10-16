@@ -609,45 +609,42 @@ input[type="checkbox"]:hover {
     100% { left: 100%; }
 }
 
-/* Smooth transitions for all theme changes */
-*,
-*::before,
-/* Preview panel */
-.mod-management-card .card-content {
+/* ===== Preview panel (clean) ===== */
+.mod-content-row {
     display: flex;
     gap: 1rem;
     align-items: flex-start;
 }
 
-.table-container {
+.mod-content-row .table-container {
     flex: 1;
     min-width: 0;
 }
 
 #preview-panel {
-    width: 280px;
+    width: 260px;
     flex-shrink: 0;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 1rem;
+    padding: 0.75rem;
     box-shadow: var(--shadow-sm);
-    max-height: 60vh;
+    max-height: 55vh;
     overflow-y: auto;
 }
 
 #preview-panel h3 {
-    margin: 0 0 0.75rem 0;
-    font-size: 1rem;
+    margin: 0 0 0.6rem 0;
+    font-size: 0.95rem;
     color: var(--text-color);
     border-bottom: 1px solid var(--divider-color);
-    padding-bottom: 0.5rem;
+    padding-bottom: 0.4rem;
 }
 
 #preview-images {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.6rem;
 }
 
 #preview-images img {
@@ -659,13 +656,12 @@ input[type="checkbox"]:hover {
 }
 
 #preview-status {
-    margin-top: 0.75rem;
-    font-size: 0.85rem;
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
     text-align: center;
 }
 
-/* Make rows clickable for preview */
 .mod-table tbody tr {
     cursor: pointer;
 }
@@ -675,13 +671,5 @@ input[type="checkbox"]:hover {
 }
 
 .mod-table tbody tr.selected {
-    background: var(--primary-color);
-    color: white;
-}
-
-.mod-table tbody tr.selected td {
-    color: white;
-}
-*::after {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    outline: 2px solid var(--primary-color);
 }

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -71,7 +71,7 @@
                         <button id="select-all-btn" class="btn btn-success" data-i18n="mods.selectAll">Select All</button>
                     </div>
                 </div>
-                <div class="card-content">
+                <div class="card-content mod-content-row">
                     <div class="table-container">
                         <table id="mod-table" class="mod-table">
                             <thead>
@@ -82,38 +82,34 @@
                                     <th class="col-modname" data-sortable="modName" data-i18n="table.modName">Mod Name</th>
                                     <th class="col-date" data-sortable="installedDate" data-i18n="table.date">Date</th>
                                     <th class="col-actions" data-i18n="table.actions">Actions</th>
-                                    <div id="preview-panel">
-    <h3>Preview</h3>
-    <div id="preview-images"></div>
-    <p id="preview-status">Select a mod</p>
-</div>
                                 </tr>
                             </thead>
                             <tbody id="mod-table-body">
                             </tbody>
                         </table>
                     </div>
+                    <div id="preview-panel">
+                        <h3>Preview</h3>
+                        <div id="preview-images"></div>
+                        <p id="preview-status">Select a mod</p>
+                    </div>
                 </div>
             </div>
         </div>
-<div id="preview-panel" style="width: 280px; border-left: 1px solid #ccc; padding: 1rem; overflow-y: auto;">
-    <h3>Preview</h3>
-    <div id="preview-images"></div>
-    <p id="preview-status"></p>
-</div>
+
         <div class="action-panel">
             <div class="action-buttons">
                 <button id="apply-mods-btn" class="btn btn-primary btn-large">
                     <span class="btn-icon">⚡</span>
-                        <span class="btn-text" data-i18n="actions.applyMods">Apply Mods</span>
+                    <span class="btn-text" data-i18n="actions.applyMods">Apply Mods</span>
                 </button>
                 <button id="uninstall-mods-btn" class="btn btn-danger btn-large">
                     <span class="btn-icon">🗑️</span>
-                        <span class="btn-text" data-i18n="actions.uninstallMods">Uninstall Mods</span>
+                    <span class="btn-text" data-i18n="actions.uninstallMods">Uninstall Mods</span>
                 </button>
                 <button id="launch-game-btn" class="btn btn-success btn-large">
                     <span class="btn-icon">🚀</span>
-                        <span class="btn-text" data-i18n="actions.launchGame">Launch Game</span>
+                    <span class="btn-text" data-i18n="actions.launchGame">Launch Game</span>
                 </button>
             </div>
             <div class="status-display">

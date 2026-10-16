@@ -478,11 +478,54 @@ function renderModTable() {
             <td class="col-modname">${escapeHtml(modName)}</td>
             <td class="col-date">${dateStr}</td>
             <td class="col-actions">
-                <button class="delete-btn" onclick="deleteMod('${mod.id}')" title="Delete">🗑️</button>
+                <button class="delete-btn" onclick="event.stopPropagation(); deleteMod('${mod.id}')" title="Delete">🗑️</button>
             </td>
         `;
+        row.addEventListener('click', () => showPreview(mod.id));
         tbody.appendChild(row);
     });
+}
+
+async function showPreview(modId) {
+    document.querySelectorAll('#mod-table-body tr').forEach(r => r.classList.remove('selected'));
+    const clicked = document.querySelector(`#mod-table-body input[data-mod-id="${modId}"]`);
+    if (clicked) clicked.closest('tr').classList.add('selected');
+
+    const container = document.getElementById('preview-images');
+    const status = document.getElementById('preview-status');
+    if (!container || !status) return;
+
+    container.innerHTML = '';
+    status.textContent = 'Loading…';
+
+    try {
+        const result = await CSharpBridge.invoke('generatePreview', {
+            modId: modId,
+            region: getServerRegion()
+        });
+
+        if (result && result.error) {
+            status.textContent = result.error;
+            return;
+        }
+
+        const paths = (result && result.previewPaths) || [];
+        if (paths.length === 0) {
+            status.textContent = 'No preview available';
+            return;
+        }
+
+        paths.forEach(p => {
+            const img = document.createElement('img');
+            img.src = 'file:///' + p.replace(/\\/g, '/');
+            img.alt = 'preview';
+            container.appendChild(img);
+        });
+        status.textContent = paths.length + ' texture(s)';
+    } catch (e) {
+        console.error('[showPreview]', e);
+        status.textContent = 'Preview failed';
+    }
 }
 
 function sortMods(column) {

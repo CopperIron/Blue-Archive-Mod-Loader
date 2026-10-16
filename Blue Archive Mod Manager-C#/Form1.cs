@@ -332,7 +332,47 @@ namespace Blue_Archive_Mod_Manager_C_
                     return new { error = ex.Message };
                 }
             });
+_webBridge.RegisterHandler("generatePreview", async (payload) =>
+{
+    try
+    {
+        string region = "global";
+        string modId = null;
 
+        if (payload.ValueKind == JsonValueKind.Object)
+        {
+            if (payload.TryGetProperty("region", out var regProp))
+                region = regProp.GetString() ?? "global";
+            if (payload.TryGetProperty("modId", out var idProp))
+                modId = idProp.GetString();
+        }
+
+        if (string.IsNullOrEmpty(modId))
+            return new { error = "modId is required" };
+
+        var mods = _modManager.GetAllMods(null, region);
+        var mod = mods.FirstOrDefault(m => m.Id == modId);
+        if (mod == null)
+            return new { error = "Mod not found" };
+
+        // Assumes you added GeneratePreviewsAsync to ModManager (or a PreviewExtractor)
+        await _modManager.GeneratePreviewsAsync(mod);
+
+        // Persist the updated mod (PreviewPaths / PreviewStatus)
+        _modManager.UpdateMod(mod, region);
+
+        return new
+        {
+            success = true,
+            previewStatus = mod.PreviewStatus,
+            previewPaths = mod.PreviewPaths ?? new List<string>()
+        };
+    }
+    catch (Exception ex)
+    {
+        return new { error = ex.Message };
+    }
+});
             _webBridge.RegisterHandler("launchGame", async (payload) =>
             {
                 try

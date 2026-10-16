@@ -578,83 +578,80 @@ input[type="checkbox"]:hover {
         font-size: 0.8rem;
     }
     
-    .col-filename { width: 150px; }
-    .col-date { width: 100px; }
-}
 
-/* Loading states */
-.loading {
-    position: relative;
+/* ===== Fixed chrome, only mod list scrolls ===== */
+html, body {
+    height: 100%;
+    margin: 0;
     overflow: hidden;
 }
 
-.loading::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-
-/* ===== Layout: only mod list scrolls ===== */
 .container {
     display: flex;
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+    box-sizing: border-box;
+}
+
+.app-header,
+.action-panel {
+    flex-shrink: 0;
 }
 
 .content-grid {
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 1rem;
     overflow: hidden;
+}
+
+.game-info-card {
+    overflow: auto;
+    min-height: 0;
 }
 
 .mod-management-card {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    height: 100%;
-}
-
-.mod-management-card .card-content.mod-content-row {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    gap: 1rem;
-    align-items: stretch;
     overflow: hidden;
 }
 
-.mod-content-row .table-container {
-    flex: 1;
-    min-width: 0;
-    overflow-y: auto;
-    overflow-x: auto;
-    max-height: 100%;
-}
-
-.action-panel,
-.app-header,
-.game-info-card,
-.card-header,
-#preview-panel {
+.mod-management-card .card-header {
     flex-shrink: 0;
 }
 
-/* Preview panel */
+.mod-management-card .card-content.mod-content-row {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: row;
+    gap: 0.75rem;
+    overflow: hidden;
+    align-items: stretch;
+}
+
+.mod-content-row .table-container {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
 #preview-panel {
-    width: 260px;
+    width: 240px;
+    flex: 0 0 240px;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 0.75rem;
     box-shadow: var(--shadow-sm);
     overflow-y: auto;
-    max-height: 100%;
+    min-height: 0;
 }
 
 #preview-panel h3 {
@@ -684,6 +681,7 @@ input[type="checkbox"]:hover {
     font-size: 0.8rem;
     color: var(--text-secondary);
     text-align: center;
+    word-break: break-word;
 }
 
 .mod-table tbody tr {
@@ -696,4 +694,14 @@ input[type="checkbox"]:hover {
 
 .mod-table tbody tr.selected {
     outline: 2px solid var(--primary-color);
+}
+
+@media (max-width: 1100px) {
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+    #preview-panel {
+        width: 200px;
+        flex-basis: 200px;
+    }
 }

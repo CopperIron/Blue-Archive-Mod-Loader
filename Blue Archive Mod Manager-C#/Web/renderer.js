@@ -636,7 +636,33 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+async function showPreview(modId) {
+    const mod = allMods.find(m => m.id === modId);
+    const container = document.getElementById('preview-images');
+    const status = document.getElementById('preview-status');
+    container.innerHTML = '';
+    status.textContent = 'Loading…';
 
+    // Call C# to generate if needed
+    if (mod.previewStatus !== 'ready') {
+        await CSharpBridge.invoke('generatePreview', { modId, region: getServerRegion() });
+        await loadMods(); // refresh
+    }
+
+    const updated = allMods.find(m => m.id === modId);
+    if (updated.previewPaths && updated.previewPaths.length) {
+        updated.previewPaths.forEach(p => {
+            const img = document.createElement('img');
+            img.src = `file:///${p.replace(/\\/g, '/')}`;
+            img.style.maxWidth = '100%';
+            img.style.marginBottom = '8px';
+            container.appendChild(img);
+        });
+        status.textContent = `${updated.previewPaths.length} texture(s)`;
+    } else {
+        status.textContent = 'No preview available';
+    }
+}
 // Notification handlers
 CSharpBridge.onNotification('statusUpdate', (message) => {
     console.log('[Notification] Status:', message);

@@ -359,41 +359,60 @@ public async Task GeneratePreviewsAsync(ModData mod)
     var previewDir = Path.Combine(_settingsManager.GetAppDataPath(), "Previews", mod.Id);
     Directory.CreateDirectory(previewDir);
 
-    // Expects Tools/extract_preview.py next to the executable (or adjust the path)
+    // Expects Tools/extract_preview.py next to the executable
     var script = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Tools", "extract_preview.py");
     if (!File.Exists(script))
     {
         mod.PreviewStatus = "failed";
-        _logger("extract_preview.py not found");
+        _logger("extract_preview.py not found at: " + script);
+        return;
+    }
+
+    string[] pythonCandidates = { "python", "python3", "py", "python311" };
+    System.Diagnostics.Process? proc = null;
+    string usedPython = null;
+
+    foreach (var py in pythonCandidates)
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = py,
+                Arguments = $"\"{script}\" \"{mod.Path}\" \"{previewDir}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            proc = System.Diagnostics.Process.Start(psi);
+            if (proc != null)
+            {
+                usedPython = py;
+                break;
+            }
+        }
+        catch { /* try next */ }
+    }
+
+    if (proc == null)
+    {
+        mod.PreviewStatus = "failed";
+        _logger("Could not start any Python interpreter");
         return;
     }
 
     try
     {
-        var psi = new System.Diagnostics.ProcessStartInfo
-        {
-            FileName = "python",
-            Arguments = $"\"{script}\" \"{mod.Path}\" \"{previewDir}\"",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var proc = System.Diagnostics.Process.Start(psi);
-        if (proc == null)
-        {
-            mod.PreviewStatus = "failed";
-            return;
-        }
-
         var output = await proc.StandardOutput.ReadToEndAsync();
+        var err = await proc.StandardError.ReadToEndAsync();
         await proc.WaitForExitAsync();
+
+        _logger($"Preview used '{usedPython}', exit={proc.ExitCode}, out={output}, err={err}");
 
         if (proc.ExitCode != 0)
         {
             mod.PreviewStatus = "failed";
-            _logger($"Preview extraction failed: {await proc.StandardError.ReadToEndAsync()}");
             return;
         }
 

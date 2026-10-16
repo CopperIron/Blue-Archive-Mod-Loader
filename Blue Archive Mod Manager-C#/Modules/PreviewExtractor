@@ -1,0 +1,48 @@
+public async Task GeneratePreviewsAsync(ModData mod)
+{
+    if (!mod.Path.EndsWith(".bundle", StringComparison.OrdinalIgnoreCase))
+    {
+        mod.PreviewStatus = "none";
+        return;
+    }
+
+    mod.PreviewStatus = "extracting";
+    var previewDir = Path.Combine(_settingsManager.GetAppDataPath(), "Previews", mod.Id);
+    Directory.CreateDirectory(previewDir);
+
+    // Assume python + UnityPy available (same environment BAMT uses)
+    var script = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Tools", "extract_preview.py");
+    var psi = new System.Diagnostics.ProcessStartInfo
+    {
+        FileName = "python",
+        Arguments = $"\"{script}\" \"{mod.Path}\" \"{previewDir}\"",
+        RedirectStandardOutput = true,
+        UseShellExecute = false,
+        CreateNoWindow = true
+    };
+
+    try
+    {
+        using var proc = System.Diagnostics.Process.Start(psi);
+        var output = await proc.StandardOutput.ReadToEndAsync();
+        await proc.WaitForExitAsync();
+
+        var doc = JsonDocument.Parse(output);
+        if (doc.RootElement.TryGetProperty("textures", out var arr))
+        {
+            mod.PreviewPaths = arr.EnumerateArray()
+                .Select(t => t.GetProperty("path").GetString())
+                .Where(p => !string.IsNullOrEmpty(p))
+                .ToList();
+            mod.PreviewStatus = mod.PreviewPaths.Count > 0 ? "ready" : "failed";
+        }
+        else
+        {
+            mod.PreviewStatus = "failed";
+        }
+    }
+    catch
+    {
+        mod.PreviewStatus = "failed";
+    }
+}

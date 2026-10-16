@@ -53,7 +53,7 @@
             Controls.Add(webView21);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "Font1";
-            Text = "BMM";
+            Text = "BMM Enhanced";
             Load += BMM_Load;
             ((System.ComponentModel.ISupportInitialize)webView21).EndInit();
             ResumeLayout(false);

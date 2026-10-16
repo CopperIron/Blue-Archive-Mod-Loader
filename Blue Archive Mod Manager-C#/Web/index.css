@@ -598,39 +598,63 @@ input[type="checkbox"]:hover {
     background: linear-gradient(
         90deg,
         transparent,
-        rgba(255, 255, 255, 0.2),
-        transparent
-    );
-    animation: loading 1.5s infinite;
+
+/* ===== Layout: only mod list scrolls ===== */
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
-@keyframes loading {
-    0% { left: -100%; }
-    100% { left: 100%; }
+.content-grid {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
-/* ===== Preview panel (clean) ===== */
-.mod-content-row {
+.mod-management-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+}
+
+.mod-management-card .card-content.mod-content-row {
+    flex: 1;
+    min-height: 0;
     display: flex;
     gap: 1rem;
-    align-items: flex-start;
+    align-items: stretch;
+    overflow: hidden;
 }
 
 .mod-content-row .table-container {
     flex: 1;
     min-width: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+    max-height: 100%;
 }
 
+.action-panel,
+.app-header,
+.game-info-card,
+.card-header,
+#preview-panel {
+    flex-shrink: 0;
+}
+
+/* Preview panel */
 #preview-panel {
     width: 260px;
-    flex-shrink: 0;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 0.75rem;
     box-shadow: var(--shadow-sm);
-    max-height: 55vh;
     overflow-y: auto;
+    max-height: 100%;
 }
 
 #preview-panel h3 {

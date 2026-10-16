@@ -511,7 +511,7 @@ async function showPreview(modId) {
 
         const paths = (result && result.previewPaths) || [];
         if (paths.length === 0) {
-            status.textContent = 'No preview available';
+            status.textContent = 'No preview available (need Tools/extract_preview.py + Python + UnityPy)';
             return;
         }
 
@@ -703,7 +703,7 @@ async function showPreview(modId) {
         });
         status.textContent = `${updated.previewPaths.length} texture(s)`;
     } else {
-        status.textContent = 'No preview available';
+        status.textContent = 'No preview available (need Tools/extract_preview.py + Python + UnityPy)';
     }
 }
 // Notification handlers

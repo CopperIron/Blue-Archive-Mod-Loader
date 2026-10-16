@@ -345,7 +345,78 @@ public async Task<List<string>> UninstallModsAsync(List<string> selectedModIds, 
         return errors;
     });
 }
+public async Task GeneratePreviewsAsync(ModData mod)
+{
+    if (mod == null || string.IsNullOrEmpty(mod.Path) ||
+        !mod.Path.EndsWith(".bundle", StringComparison.OrdinalIgnoreCase))
+    {
+        mod.PreviewStatus = "none";
+        mod.PreviewPaths ??= new List<string>();
+        return;
+    }
 
+    mod.PreviewStatus = "extracting";
+    var previewDir = Path.Combine(_settingsManager.GetAppDataPath(), "Previews", mod.Id);
+    Directory.CreateDirectory(previewDir);
+
+    // Expects Tools/extract_preview.py next to the executable (or adjust the path)
+    var script = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Tools", "extract_preview.py");
+    if (!File.Exists(script))
+    {
+        mod.PreviewStatus = "failed";
+        _logger("extract_preview.py not found");
+        return;
+    }
+
+    try
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "python",
+            Arguments = $"\"{script}\" \"{mod.Path}\" \"{previewDir}\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var proc = System.Diagnostics.Process.Start(psi);
+        if (proc == null)
+        {
+            mod.PreviewStatus = "failed";
+            return;
+        }
+
+        var output = await proc.StandardOutput.ReadToEndAsync();
+        await proc.WaitForExitAsync();
+
+        if (proc.ExitCode != 0)
+        {
+            mod.PreviewStatus = "failed";
+            _logger($"Preview extraction failed: {await proc.StandardError.ReadToEndAsync()}");
+            return;
+        }
+
+        var doc = System.Text.Json.JsonDocument.Parse(output);
+        if (doc.RootElement.TryGetProperty("textures", out var arr))
+        {
+            mod.PreviewPaths = arr.EnumerateArray()
+                .Select(t => t.GetProperty("path").GetString())
+                .Where(p => !string.IsNullOrEmpty(p))
+                .ToList();
+            mod.PreviewStatus = mod.PreviewPaths.Count > 0 ? "ready" : "failed";
+        }
+        else
+        {
+            mod.PreviewStatus = "failed";
+        }
+    }
+    catch (Exception ex)
+    {
+        mod.PreviewStatus = "failed";
+        _logger($"GeneratePreviewsAsync error: {ex.Message}");
+    }
+}
         private static bool ShouldUseJpMapping(string region)
         {
             return region.Equals("jp", StringComparison.OrdinalIgnoreCase);
